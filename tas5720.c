@@ -44,7 +44,7 @@ struct tas5720_data {
 	unsigned int last_fault;
 };
 
-static int tas5720_hw_params(struct snd_pcm_substream *substream,
+static int tas5720aq1_hw_params(struct snd_pcm_substream *substream,
 			     struct snd_pcm_hw_params *params,
 			     struct snd_soc_dai *dai)
 {
@@ -67,8 +67,8 @@ static int tas5720_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL1_REG,
-				  TAS5720_SSZ_DS, ssz_ds);
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_DIGITAL_CTRL1_REG,
+				  TAS5720AQ1_SSZ_DS, ssz_ds);
 	if (ret < 0) {
 		dev_err(codec->dev, "error setting sample rate: %d\n", ret);
 		return ret;
@@ -77,7 +77,7 @@ static int tas5720_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
-static int tas5720_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+static int tas5720aq1_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	u8 serial_format;
@@ -92,7 +92,7 @@ static int tas5720_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		       SND_SOC_DAIFMT_INV_MASK)) {
 	case (SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF):
 		/* 1st data bit occur one BCLK cycle after the frame sync */
-		serial_format = TAS5720_SAIF_I2S;
+		serial_format = TAS5720AQ1_SAIF_I2S;
 		break;
 	case (SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_NB_NF):
 		/*
@@ -102,7 +102,7 @@ static int tas5720_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		 * its delaying of the 1st data bit to receive DSP_A formatted
 		 * data. See device datasheet for additional details.
 		 */
-		serial_format = TAS5720_SAIF_I2S;
+		serial_format = TAS5720AQ1_SAIF_I2S;
 		break;
 	case (SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_NB_NF):
 		/*
@@ -111,19 +111,19 @@ static int tas5720_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 		 * DSP_B formatted data in LEFTJ mode (no delaying of the 1st
 		 * data bit).
 		 */
-		serial_format = TAS5720_SAIF_LEFTJ;
+		serial_format = TAS5720AQ1_SAIF_LEFTJ;
 		break;
 	case (SND_SOC_DAIFMT_LEFT_J | SND_SOC_DAIFMT_NB_NF):
 		/* No delay after the frame sync */
-		serial_format = TAS5720_SAIF_LEFTJ;
+		serial_format = TAS5720AQ1_SAIF_LEFTJ;
 		break;
 	default:
 		dev_vdbg(codec->dev, "DAI Format is not found\n");
 		return -EINVAL;
 	}
 
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL1_REG,
-				  TAS5720_SAIF_FORMAT_MASK,
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_DIGITAL_CTRL1_REG,
+				  TAS5720AQ1_SAIF_FORMAT_MASK,
 				  serial_format);
 	if (ret < 0) {
 		dev_err(codec->dev, "error setting SAIF format: %d\n", ret);
@@ -133,63 +133,18 @@ static int tas5720_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	return 0;
 }
 
-static int tas5720_set_dai_tdm_slot(struct snd_soc_dai *dai,
-				    unsigned int tx_mask, unsigned int rx_mask,
-				    int slots, int slot_width)
-{
-	struct snd_soc_codec *codec = dai->codec;
-	unsigned int first_slot;
-	int ret;
-
-	if (!tx_mask) {
-		dev_err(codec->dev, "tx masks must not be 0\n");
-		return -EINVAL;
-	}
-
-	/*
-	 * Determine the first slot that is being requested. We will only
-	 * use the first slot that is found since the TAS5720 is a mono
-	 * amplifier.
-	 */
-	first_slot = __ffs(tx_mask);
-
-	if (first_slot > 7) {
-		dev_err(codec->dev, "slot selection out of bounds (%u)\n",
-			first_slot);
-		return -EINVAL;
-	}
-
-	/* Enable manual TDM slot selection (instead of I2C ID based) */
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL1_REG,
-				  TAS5720_TDM_CFG_SRC, TAS5720_TDM_CFG_SRC);
-	if (ret < 0)
-		goto error_snd_soc_update_bits;
-
-	/* Configure the TDM slot to process audio from */
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL2_REG,
-				  TAS5720_TDM_SLOT_SEL_MASK, first_slot);
-	if (ret < 0)
-		goto error_snd_soc_update_bits;
-
-	return 0;
-
-error_snd_soc_update_bits:
-	dev_err(codec->dev, "error configuring TDM mode: %d\n", ret);
-	return ret;
-}
-
-static int tas5720_mute(struct snd_soc_dai *dai, int mute)
+static int tas5720aq1_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	int ret;
-
+#if TODO
 	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL2_REG,
 				  TAS5720_MUTE, mute ? TAS5720_MUTE : 0);
 	if (ret < 0) {
 		dev_err(codec->dev, "error (un-)muting device: %d\n", ret);
 		return ret;
 	}
-
+#endif
 	return 0;
 }
 
@@ -201,14 +156,14 @@ static void tas5720_fault_check_work(struct work_struct *work)
 	unsigned int curr_fault;
 	int ret;
 
-	ret = regmap_read(tas5720->regmap, TAS5720_FAULT_REG, &curr_fault);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_FAULT_REG, &curr_fault);
 	if (ret < 0) {
 		dev_err(dev, "failed to read FAULT register: %d\n", ret);
 		goto out;
 	}
 
 	/* Check/handle all errors except SAIF clock errors */
-	curr_fault &= TAS5720_OCE | TAS5720_DCE | TAS5720_OTE;
+	curr_fault &= TAS5720AQ1_OCE | TAS5720AQ1_DCE | TAS5720AQ1_OTE;
 
 	/*
 	 * Only flag errors once for a given occurrence. This is needed as
@@ -216,13 +171,13 @@ static void tas5720_fault_check_work(struct work_struct *work)
 	 * during which we don't want to bombard the system with the same
 	 * error message over and over.
 	 */
-	if ((curr_fault & TAS5720_OCE) && !(tas5720->last_fault & TAS5720_OCE))
+	if ((curr_fault & TAS5720AQ1_OCE) && !(tas5720->last_fault & TAS5720AQ1_OCE))
 		dev_crit(dev, "experienced an over current hardware fault\n");
 
-	if ((curr_fault & TAS5720_DCE) && !(tas5720->last_fault & TAS5720_DCE))
+	if ((curr_fault & TAS5720AQ1_DCE) && !(tas5720->last_fault & TAS5720AQ1_DCE))
 		dev_crit(dev, "experienced a DC detection fault\n");
 
-	if ((curr_fault & TAS5720_OTE) && !(tas5720->last_fault & TAS5720_OTE))
+	if ((curr_fault & TAS5720AQ1_OTE) && !(tas5720->last_fault & TAS5720AQ1_OTE))
 		dev_crit(dev, "experienced an over temperature fault\n");
 
 	/* Store current fault value so we can detect any changes next time */
@@ -237,13 +192,13 @@ static void tas5720_fault_check_work(struct work_struct *work)
 	 * the full sequence no matter the first return value to minimizes
 	 * chances for the device to end up in shutdown mode.
 	 */
-	ret = regmap_write_bits(tas5720->regmap, TAS5720_POWER_CTRL_REG,
-				TAS5720_SDZ, 0);
+	ret = regmap_write_bits(tas5720->regmap, TAS5720AQ1_POWER_CTRL_REG,
+				TAS5720AQ1_SDZ, 0);
 	if (ret < 0)
 		dev_err(dev, "failed to write POWER_CTRL register: %d\n", ret);
 
-	ret = regmap_write_bits(tas5720->regmap, TAS5720_POWER_CTRL_REG,
-				TAS5720_SDZ, TAS5720_SDZ);
+	ret = regmap_write_bits(tas5720->regmap, TAS5720AQ1_POWER_CTRL_REG,
+				TAS5720AQ1_SDZ, TAS5720AQ1_SDZ);
 	if (ret < 0)
 		dev_err(dev, "failed to write POWER_CTRL register: %d\n", ret);
 
@@ -253,7 +208,7 @@ out:
 			      msecs_to_jiffies(TAS5720_FAULT_CHECK_INTERVAL));
 }
 
-static int tas5720_codec_probe(struct snd_soc_codec *codec)
+static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 {
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	unsigned int device_id;
@@ -261,34 +216,35 @@ static int tas5720_codec_probe(struct snd_soc_codec *codec)
 
 	tas5720->codec = codec;
 
-	ret = regmap_read(tas5720->regmap, TAS5720_DEVICE_ID_REG, &device_id);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_DEVICE_ID_REG, &device_id);
 	if (ret < 0) {
 		dev_err(codec->dev, "failed to read device ID register: %d\n",
 			ret);
 		goto probe_fail;
 	}
 
-	if (device_id != TAS5720_DEVICE_ID) {
+	if (device_id != TAS5720AQ1_DEVICE_ID) {
 		dev_err(codec->dev, "wrong device ID. expected: %u read: %u\n",
-			TAS5720_DEVICE_ID, device_id);
+			TAS5720AQ1_DEVICE_ID, device_id);
 		ret = -ENODEV;
 		goto probe_fail;
 	}
 
+#if TODO
 	/* Set device to mute */
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL2_REG,
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_DIGITAL_CTRL2_REG,
 				  TAS5720_MUTE, TAS5720_MUTE);
 	if (ret < 0)
 		goto error_snd_soc_update_bits;
-
+#endif
 	/*
 	 * Enter shutdown mode - our default when not playing audio - to
 	 * minimize current consumption. On the TAS5720 there is no real down
 	 * side doing so as all device registers are preserved and the wakeup
 	 * of the codec is rather quick which we do using a dapm widget.
 	 */
-	ret = snd_soc_update_bits(codec, TAS5720_POWER_CTRL_REG,
-				  TAS5720_SDZ, 0);
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_POWER_CTRL_REG,
+				  TAS5720AQ1_SDZ, 0);
 	if (ret < 0)
 		goto error_snd_soc_update_bits;
 
@@ -304,7 +260,7 @@ probe_fail:
 	return ret;
 }
 
-static int tas5720_codec_remove(struct snd_soc_codec *codec)
+static int tas5720aq1_codec_remove(struct snd_soc_codec *codec)
 {
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	int ret;
@@ -322,9 +278,9 @@ static int tas5720_dac_event(struct snd_soc_dapm_widget *w,
 	int ret;
 
 	if (event & SND_SOC_DAPM_POST_PMU) {
-		/* Take TAS5720 out of shutdown mode */
-		ret = snd_soc_update_bits(codec, TAS5720_POWER_CTRL_REG,
-					  TAS5720_SDZ, TAS5720_SDZ);
+		/* Take TAS5720AQ1 out of shutdown mode */
+		ret = snd_soc_update_bits(codec, TAS5720AQ1_POWER_CTRL_REG,
+					  TAS5720AQ1_SDZ, TAS5720AQ1_SDZ);
 		if (ret < 0) {
 			dev_err(codec->dev, "error waking codec: %d\n", ret);
 			return ret;
@@ -343,14 +299,14 @@ static int tas5720_dac_event(struct snd_soc_dapm_widget *w,
 		/* Turn on TAS5720 periodic fault checking/handling */
 		tas5720->last_fault = 0;
 		schedule_delayed_work(&tas5720->fault_check_work,
-				msecs_to_jiffies(TAS5720_FAULT_CHECK_INTERVAL));
+				msecs_to_jiffies(TAS5720AQ1_FAULT_CHECK_INTERVAL));
 	} else if (event & SND_SOC_DAPM_PRE_PMD) {
 		/* Disable TAS5720 periodic fault checking/handling */
 		cancel_delayed_work_sync(&tas5720->fault_check_work);
 
 		/* Place TAS5720 in shutdown mode to minimize current draw */
-		ret = snd_soc_update_bits(codec, TAS5720_POWER_CTRL_REG,
-					  TAS5720_SDZ, 0);
+		ret = snd_soc_update_bits(codec, TAS5720AQ1_POWER_CTRL_REG,
+					  TAS5720AQ1_SDZ, 0);
 		if (ret < 0) {
 			dev_err(codec->dev, "error shutting down codec: %d\n",
 				ret);
@@ -362,7 +318,7 @@ static int tas5720_dac_event(struct snd_soc_dapm_widget *w,
 }
 
 #ifdef CONFIG_PM
-static int tas5720_suspend(struct snd_soc_codec *codec)
+static int tas5720aq1_suspend(struct snd_soc_codec *codec)
 {
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	int ret;
@@ -373,7 +329,7 @@ static int tas5720_suspend(struct snd_soc_codec *codec)
 	return ret;
 }
 
-static int tas5720_resume(struct snd_soc_codec *codec)
+static int tas5720aq1_resume(struct snd_soc_codec *codec)
 {
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	int ret;
@@ -396,8 +352,8 @@ static int tas5720_resume(struct snd_soc_codec *codec)
 static bool tas5720_is_volatile_reg(struct device *dev, unsigned int reg)
 {
 	switch (reg) {
-	case TAS5720_DEVICE_ID_REG:
-	case TAS5720_FAULT_REG:
+	case TAS5720AQ1_DEVICE_ID_REG:
+	case TAS5720AQ1_FAULT_REG:
 		return true;
 	default:
 		return false;
@@ -433,9 +389,9 @@ static DECLARE_TLV_DB_SCALE(dac_tlv, -10350, 50, 0);
 
 static const struct snd_kcontrol_new tas5720_snd_controls[] = {
 	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
-		       TAS5720_VOLUME_CTRL_REG, 0, 0xff, 0, dac_tlv),
-	SOC_SINGLE_TLV("Speaker Driver Analog Gain", TAS5720_ANALOG_CTRL_REG,
-		       TAS5720_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
+		       TAS5720AQ1_VOLUME_CTRL_CFG_REG, 0, 0xff, 0, dac_tlv),
+	SOC_SINGLE_TLV("Speaker Driver Analog Gain", TAS5720AQ_ANALOG_CTRL_REG,
+		       TAS5720AQ1_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
 };
 
 static const struct snd_soc_dapm_widget tas5720_dapm_widgets[] = {
@@ -450,11 +406,11 @@ static const struct snd_soc_dapm_route tas5720_audio_map[] = {
 	{ "OUT", NULL, "DAC" },
 };
 
-static struct snd_soc_codec_driver soc_codec_dev_tas5720 = {
-	.probe = tas5720_codec_probe,
-	.remove = tas5720_codec_remove,
-	.suspend = tas5720_suspend,
-	.resume = tas5720_resume,
+static struct snd_soc_codec_driver soc_codec_dev_tas5720aq1 = {
+	.probe = tas5720aq1_codec_probe,
+	.remove = tas5720aq1_codec_remove,
+	.suspend = tas5720aq1_suspend,
+	.resume = tas5720aq1_resume,
 
 	.component_driver = {
 		.controls		= tas5720_snd_controls,
@@ -474,15 +430,14 @@ static struct snd_soc_codec_driver soc_codec_dev_tas5720 = {
 #define TAS5720_FORMATS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S18_3LE |\
 			 SNDRV_PCM_FMTBIT_S20_3LE | SNDRV_PCM_FMTBIT_S24_LE)
 
-static struct snd_soc_dai_ops tas5720_speaker_dai_ops = {
-	.hw_params	= tas5720_hw_params,
-	.set_fmt	= tas5720_set_dai_fmt,
-	.set_tdm_slot	= tas5720_set_dai_tdm_slot,
-	.digital_mute	= tas5720_mute,
+static struct snd_soc_dai_ops tas5720aq1_speaker_dai_ops = {
+	.hw_params	= tas5720aq1_hw_params,
+	.set_fmt	= tas5720aq1_set_dai_fmt,
+	.digital_mute	= tas5720aq1_mute,
 };
 
 /*
- * TAS5720 DAI structure
+ * TAS5720AQ1 DAI structure
  *
  * Note that were are advertising .playback.channels_max = 2 despite this being
  * a mono amplifier. The reason for that is that some serial ports such as TI's
@@ -492,9 +447,9 @@ static struct snd_soc_dai_ops tas5720_speaker_dai_ops = {
  * simply ignore any extra channel(s) asides from the one channel that is
  * configured to be played back.
  */
-static struct snd_soc_dai_driver tas5720_dai[] = {
+static struct snd_soc_dai_driver tas5720aq1_dai[] = {
 	{
-		.name = "tas5720-amplifier",
+		.name = "tas5720aq1-amplifier",
 		.playback = {
 			.stream_name = "Playback",
 			.channels_min = 1,
@@ -502,7 +457,7 @@ static struct snd_soc_dai_driver tas5720_dai[] = {
 			.rates = TAS5720_RATES,
 			.formats = TAS5720_FORMATS,
 		},
-		.ops = &tas5720_speaker_dai_ops,
+		.ops = &tas5720aq1_speaker_dai_ops,
 	},
 };
 
@@ -529,8 +484,8 @@ static int tas5720aq1_probe(struct i2c_client *client,
 	dev_set_drvdata(dev, data);
 
 	ret = snd_soc_register_codec(&client->dev,
-				     &soc_codec_dev_tas5720,
-				     tas5720_dai, ARRAY_SIZE(tas5720_dai));
+				     &soc_codec_dev_tas5720aq1,
+				     tas5720aq1_dai, ARRAY_SIZE(tas5720aq1_dai));
 	if (ret < 0) {
 		dev_err(dev, "failed to register codec: %d\n", ret);
 		return ret;
