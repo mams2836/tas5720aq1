@@ -1,9 +1,7 @@
 /*
- * tas5720.c - ALSA SoC Texas Instruments TAS5720 Mono Audio Amplifier
+ * tas5720aq1.c - ALSA SoC Texas Instruments TAS5720 Closed Loop Automovie Audio Amplifier
  *
- * Copyright (C)2015-2016 Texas Instruments Incorporated -  http://www.ti.com
- *
- * Author: Andreas Dannenberg <dannenberg@ti.com>
+ * Author: 
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -529,6 +527,6 @@ static struct i2c_driver tas5720_i2c_driver = {
 
 module_i2c_driver(tas5720aq1_i2c_driver);
 
-MODULE_AUTHOR("Andreas Dannenberg <dannenberg@ti.com>");
+MODULE_AUTHOR("Vimal Babu <vimal2836@gmail.com");
 MODULE_DESCRIPTION("TAS5720AQ1 Audio amplifier driver");
 MODULE_LICENSE("GPL");
