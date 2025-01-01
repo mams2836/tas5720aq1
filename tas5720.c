@@ -519,7 +519,7 @@ static int tas5720aq1_probe(struct i2c_client *client,
 		return -ENOMEM;
 
 	data->tas5720_client = client;
-	data->regmap = devm_regmap_init_i2c(client, &tas5720_regmap_config);
+	data->regmap = devm_regmap_init_i2c(client, &tas5720aq1_regmap_config);
 	if (IS_ERR(data->regmap)) {
 		ret = PTR_ERR(data->regmap);
 		dev_err(dev, "failed to allocate register map: %d\n", ret);
