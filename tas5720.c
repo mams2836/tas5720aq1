@@ -36,18 +36,10 @@
 /* Define how often to check (and clear) the fault status register (in ms) */
 #define TAS5720_FAULT_CHECK_INTERVAL		200
 
-static const char * const tas5720_supply_names[] = {
-	"dvdd",		/* Digital power supply. Connect to 3.3-V supply. */
-	"pvdd",		/* Class-D amp and analog power supply (connected). */
-};
-
-#define TAS5720_NUM_SUPPLIES	ARRAY_SIZE(tas5720_supply_names)
-
 struct tas5720_data {
 	struct snd_soc_codec *codec;
 	struct regmap *regmap;
 	struct i2c_client *tas5720_client;
-	struct regulator_bulk_data supplies[TAS5720_NUM_SUPPLIES];
 	struct delayed_work fault_check_work;
 	unsigned int last_fault;
 };
@@ -269,13 +261,6 @@ static int tas5720_codec_probe(struct snd_soc_codec *codec)
 
 	tas5720->codec = codec;
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(tas5720->supplies),
-				    tas5720->supplies);
-	if (ret != 0) {
-		dev_err(codec->dev, "failed to enable supplies: %d\n", ret);
-		return ret;
-	}
-
 	ret = regmap_read(tas5720->regmap, TAS5720_DEVICE_ID_REG, &device_id);
 	if (ret < 0) {
 		dev_err(codec->dev, "failed to read device ID register: %d\n",
@@ -315,8 +300,7 @@ error_snd_soc_update_bits:
 	dev_err(codec->dev, "error configuring device registers: %d\n", ret);
 
 probe_fail:
-	regulator_bulk_disable(ARRAY_SIZE(tas5720->supplies),
-			       tas5720->supplies);
+
 	return ret;
 }
 
@@ -326,11 +310,6 @@ static int tas5720_codec_remove(struct snd_soc_codec *codec)
 	int ret;
 
 	cancel_delayed_work_sync(&tas5720->fault_check_work);
-
-	ret = regulator_bulk_disable(ARRAY_SIZE(tas5720->supplies),
-				     tas5720->supplies);
-	if (ret < 0)
-		dev_err(codec->dev, "failed to disable supplies: %d\n", ret);
 
 	return ret;
 };
@@ -391,11 +370,6 @@ static int tas5720_suspend(struct snd_soc_codec *codec)
 	regcache_cache_only(tas5720->regmap, true);
 	regcache_mark_dirty(tas5720->regmap);
 
-	ret = regulator_bulk_disable(ARRAY_SIZE(tas5720->supplies),
-				     tas5720->supplies);
-	if (ret < 0)
-		dev_err(codec->dev, "failed to disable supplies: %d\n", ret);
-
 	return ret;
 }
 
@@ -403,13 +377,6 @@ static int tas5720_resume(struct snd_soc_codec *codec)
 {
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	int ret;
-
-	ret = regulator_bulk_enable(ARRAY_SIZE(tas5720->supplies),
-				    tas5720->supplies);
-	if (ret < 0) {
-		dev_err(codec->dev, "failed to enable supplies: %d\n", ret);
-		return ret;
-	}
 
 	regcache_cache_only(tas5720->regmap, false);
 
@@ -437,11 +404,11 @@ static bool tas5720_is_volatile_reg(struct device *dev, unsigned int reg)
 	}
 }
 
-static const struct regmap_config tas5720_regmap_config = {
+static const struct regmap_config tas5720aq1_regmap_config = {
 	.reg_bits = 8,
 	.val_bits = 8,
 
-	.max_register = TAS5720_MAX_REG,
+	.max_register = TAS5720AQ1_MAX_REG,
 	.cache_type = REGCACHE_RBTREE,
 	.volatile_reg = tas5720_is_volatile_reg,
 };
@@ -539,7 +506,7 @@ static struct snd_soc_dai_driver tas5720_dai[] = {
 	},
 };
 
-static int tas5720_probe(struct i2c_client *client,
+static int tas5720aq1_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
@@ -559,16 +526,6 @@ static int tas5720_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	for (i = 0; i < ARRAY_SIZE(data->supplies); i++)
-		data->supplies[i].supply = tas5720_supply_names[i];
-
-	ret = devm_regulator_bulk_get(dev, ARRAY_SIZE(data->supplies),
-				      data->supplies);
-	if (ret != 0) {
-		dev_err(dev, "failed to request supplies: %d\n", ret);
-		return ret;
-	}
-
 	dev_set_drvdata(dev, data);
 
 	ret = snd_soc_register_codec(&client->dev,
@@ -582,7 +539,7 @@ static int tas5720_probe(struct i2c_client *client,
 	return 0;
 }
 
-static int tas5720_remove(struct i2c_client *client)
+static int tas5720aq1_remove(struct i2c_client *client)
 {
 	struct device *dev = &client->dev;
 
@@ -591,32 +548,32 @@ static int tas5720_remove(struct i2c_client *client)
 	return 0;
 }
 
-static const struct i2c_device_id tas5720_id[] = {
-	{ "tas5720", 0 },
+static const struct i2c_device_id tas5720aq1_id[] = {
+	{ "tas5720aq1", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, tas5720_id);
 
 #if IS_ENABLED(CONFIG_OF)
-static const struct of_device_id tas5720_of_match[] = {
-	{ .compatible = "ti,tas5720", },
+static const struct of_device_id tas5720aq1_of_match[] = {
+	{ .compatible = "ti,tas5720aq1", },
 	{ },
 };
-MODULE_DEVICE_TABLE(of, tas5720_of_match);
+MODULE_DEVICE_TABLE(of, tas5720aq1_of_match);
 #endif
 
 static struct i2c_driver tas5720_i2c_driver = {
 	.driver = {
-		.name = "tas5720",
-		.of_match_table = of_match_ptr(tas5720_of_match),
+		.name = "tas5720aq1",
+		.of_match_table = of_match_ptr(tas5720aq1_of_match),
 	},
-	.probe = tas5720_probe,
-	.remove = tas5720_remove,
-	.id_table = tas5720_id,
+	.probe = tas5720aq1_probe,
+	.remove = tas5720aq1_remove,
+	.id_table = tas5720aq1_id,
 };
 
-module_i2c_driver(tas5720_i2c_driver);
+module_i2c_driver(tas5720aq1_i2c_driver);
 
 MODULE_AUTHOR("Andreas Dannenberg <dannenberg@ti.com>");
-MODULE_DESCRIPTION("TAS5720 Audio amplifier driver");
+MODULE_DESCRIPTION("TAS5720AQ1 Audio amplifier driver");
 MODULE_LICENSE("GPL");
