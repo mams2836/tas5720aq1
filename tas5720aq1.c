@@ -135,14 +135,13 @@ static int tas5720aq1_mute(struct snd_soc_dai *dai, int mute)
 {
 	struct snd_soc_codec *codec = dai->codec;
 	int ret;
-#if TODO
-	ret = snd_soc_update_bits(codec, TAS5720_DIGITAL_CTRL2_REG,
-				  TAS5720_MUTE, mute ? TAS5720_MUTE : 0);
+	u16 regValue = TAS5720AQ1_MUTE_R | TAS5720AQ1_MUTE_L;
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
+				  regValue , mute ? regValue : 0);
 	if (ret < 0) {
 		dev_err(codec->dev, "error (un-)muting device: %d\n", ret);
 		return ret;
 	}
-#endif
 	return 0;
 }
 
@@ -314,38 +313,6 @@ static int tas5720_dac_event(struct snd_soc_dapm_widget *w,
 
 	return 0;
 }
-
-#ifdef CONFIG_PM
-static int tas5720aq1_suspend(struct snd_soc_codec *codec)
-{
-	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
-	int ret;
-
-	regcache_cache_only(tas5720->regmap, true);
-	regcache_mark_dirty(tas5720->regmap);
-
-	return ret;
-}
-
-static int tas5720aq1_resume(struct snd_soc_codec *codec)
-{
-	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
-	int ret;
-
-	regcache_cache_only(tas5720->regmap, false);
-
-	ret = regcache_sync(tas5720->regmap);
-	if (ret < 0) {
-		dev_err(codec->dev, "failed to sync regcache: %d\n", ret);
-		return ret;
-	}
-
-	return 0;
-}
-#else
-#define tas5720_suspend NULL
-#define tas5720_resume NULL
-#endif
 
 static bool tas5720_is_volatile_reg(struct device *dev, unsigned int reg)
 {
