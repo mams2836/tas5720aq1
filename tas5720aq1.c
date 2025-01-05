@@ -210,6 +210,7 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 	struct tas5720_data *tas5720 = snd_soc_codec_get_drvdata(codec);
 	unsigned int device_id;
 	int ret;
+	u16 regValue = TAS5720AQ1_MUTE_R | TAS5720AQ1_MUTE_L;
 
 	tas5720->codec = codec;
 
@@ -227,13 +228,12 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 		goto probe_fail;
 	}
 
-#if TODO
-	/* Set device to mute */
-	ret = snd_soc_update_bits(codec, TAS5720AQ1_DIGITAL_CTRL2_REG,
-				  TAS5720_MUTE, TAS5720_MUTE);
+	/*Set device to mute*/
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
+				  regValue , regValue);
 	if (ret < 0)
 		goto error_snd_soc_update_bits;
-#endif
+
 	/*
 	 * Enter shutdown mode - our default when not playing audio - to
 	 * minimize current consumption. On the TAS5720 there is no real down
