@@ -472,7 +472,7 @@ static const struct i2c_device_id tas5720aq1_id[] = {
 	{ "tas5720aq1", 0 },
 	{ }
 };
-MODULE_DEVICE_TABLE(i2c, tas5720_id);
+MODULE_DEVICE_TABLE(i2c, tas5720aq1_id);
 
 #if IS_ENABLED(CONFIG_OF)
 static const struct of_device_id tas5720aq1_of_match[] = {
