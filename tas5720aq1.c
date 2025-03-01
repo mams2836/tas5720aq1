@@ -228,6 +228,8 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 		goto probe_fail;
 	}
 
+	dev_err(codec->dev, "device ID. expected: %u read: %u\n",
+			TAS5720AQ1_DEVICE_ID, device_id);
 	/*Set device to mute*/
 	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
 				  regValue , regValue);
@@ -296,7 +298,7 @@ static int tas5720_dac_event(struct snd_soc_dapm_widget *w,
 		/* Turn on TAS5720 periodic fault checking/handling */
 		tas5720->last_fault = 0;
 		schedule_delayed_work(&tas5720->fault_check_work,
-				msecs_to_jiffies(TAS5720AQ1_FAULT_CHECK_INTERVAL));
+				msecs_to_jiffies(200));
 	} else if (event & SND_SOC_DAPM_PRE_PMD) {
 		/* Disable TAS5720 periodic fault checking/handling */
 		cancel_delayed_work_sync(&tas5720->fault_check_work);
@@ -374,8 +376,8 @@ static const struct snd_soc_dapm_route tas5720_audio_map[] = {
 static struct snd_soc_codec_driver soc_codec_dev_tas5720aq1 = {
 	.probe = tas5720aq1_codec_probe,
 	.remove = tas5720aq1_codec_remove,
-	.suspend = tas5720aq1_suspend,
-	.resume = tas5720aq1_resume,
+	.suspend = NULL,
+	.resume = NULL,
 
 	.component_driver = {
 		.controls		= tas5720_snd_controls,
@@ -414,7 +416,7 @@ static struct snd_soc_dai_ops tas5720aq1_speaker_dai_ops = {
  */
 static struct snd_soc_dai_driver tas5720aq1_dai[] = {
 	{
-		.name = "tas5720aq1-amplifier",
+		.name = "tas5720-amplifier",
 		.playback = {
 			.stream_name = "Playback",
 			.channels_min = 1,
@@ -456,6 +458,7 @@ static int tas5720aq1_probe(struct i2c_client *client,
 		return ret;
 	}
 
+	dev_err(dev, "tas5720aq1_probe success \n", 0);
 	return 0;
 }
 
@@ -469,22 +472,22 @@ static int tas5720aq1_remove(struct i2c_client *client)
 }
 
 static const struct i2c_device_id tas5720aq1_id[] = {
-	{ "tas5720aq1", 0 },
+	{ "tas5720", 0 },
 	{ }
 };
 MODULE_DEVICE_TABLE(i2c, tas5720aq1_id);
 
 #if IS_ENABLED(CONFIG_OF)
 static const struct of_device_id tas5720aq1_of_match[] = {
-	{ .compatible = "ti,tas5720aq1", },
+	{ .compatible = "ti,tas5720", },
 	{ },
 };
 MODULE_DEVICE_TABLE(of, tas5720aq1_of_match);
 #endif
 
-static struct i2c_driver tas5720_i2c_driver = {
+static struct i2c_driver tas5720aq1_i2c_driver = {
 	.driver = {
-		.name = "tas5720aq1",
+		.name = "tas5720",
 		.of_match_table = of_match_ptr(tas5720aq1_of_match),
 	},
 	.probe = tas5720aq1_probe,
