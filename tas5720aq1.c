@@ -39,6 +39,7 @@ struct tas5720_data {
 	struct regmap *regmap;
 	struct i2c_client *tas5720_client;
 	struct delayed_work fault_check_work;
+	struct delayed_work dump_register_work;
 	unsigned int last_fault;
 };
 
@@ -145,6 +146,110 @@ static int tas5720aq1_mute(struct snd_soc_dai *dai, int mute)
 	return 0;
 }
 
+static void tas5720_register_dump(struct work_struct *work)
+{
+	struct tas5720_data *tas5720 = container_of(work, struct tas5720_data,
+		dump_register_work);
+	struct device  *dev = tas5720->codec->dev;
+	int ret;
+	unsigned int value;
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_DEVICE_ID_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_DEVICE_ID_REG");
+		goto out;
+	}
+	
+	dev_info(dev, "TAS5720AQ1_DEVICE_ID_REG: 0x%x", value);dev_err(dev, "TAS5720AQ1_DEVICE_ID_REG : %d", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_POWER_CTRL_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_POWER_CTRL_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_POWER_CTRL_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CTRL1_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CTRL1_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_DIGITAL_CTRL1_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_VOLUME_CTRL_CFG_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_VOLUME_CTRL_CFG_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_VOLUME_CTRL_CFG_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ_ANALOG_CTRL_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ_ANALOG_CTRL_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ_ANALOG_CTRL_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_FAULT_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_FAULT_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_FAULT_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP2_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CLIP2_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_DIGITAL_CLIP2_REG: 0x%x", value);
+
+	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP1_REG, &value);
+	if (ret < 0)
+	{
+		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CLIP1_REG");
+		goto out;
+	}
+		
+	dev_info(dev, "TAS5720AQ1_DIGITAL_CLIP1_REG: 0x%x", value);
+
+out:
+	schedule_delayed_work(&tas5720->dump_register_work,
+						  msecs_to_jiffies(500));
+}
+
+
 static void tas5720_fault_check_work(struct work_struct *work)
 {
 	struct tas5720_data *tas5720 = container_of(work, struct tas5720_data,
@@ -230,6 +335,10 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 
 	dev_err(codec->dev, "device ID. expected: %u read: %u\n",
 			TAS5720AQ1_DEVICE_ID, device_id);
+
+
+	//Initial mute and shutdown mode is removed for testing
+#if 0
 	/*Set device to mute*/
 	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
 				  regValue , regValue);
@@ -246,8 +355,11 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 				  TAS5720AQ1_SDZ, 0);
 	if (ret < 0)
 		goto error_snd_soc_update_bits;
+#endif
 
 	INIT_DELAYED_WORK(&tas5720->fault_check_work, tas5720_fault_check_work);
+
+	INIT_DELAYED_WORK(&tas5720->dump_register_work, tas5720_register_dump);
 
 	return 0;
 
