@@ -274,7 +274,12 @@ static void tas5720_fault_check_work(struct work_struct *work)
 	 * error message over and over.
 	 */
 	if ((curr_fault & TAS5720AQ1_OCE) && !(tas5720->last_fault & TAS5720AQ1_OCE))
+	{
 		dev_crit(dev, "experienced an over current hardware fault\n");
+
+		// Schedule the dump to run ASAP
+		schedule_delayed_work(&tas5720->dump_register_work, 0);
+	}
 
 	if ((curr_fault & TAS5720AQ1_DCE) && !(tas5720->last_fault & TAS5720AQ1_DCE))
 		dev_crit(dev, "experienced a DC detection fault\n");
@@ -338,7 +343,6 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 
 
 	//Initial mute and shutdown mode is removed for testing
-#if 0
 	/*Set device to mute*/
 	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
 				  regValue , regValue);
@@ -355,7 +359,6 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 				  TAS5720AQ1_SDZ, 0);
 	if (ret < 0)
 		goto error_snd_soc_update_bits;
-#endif
 
 	INIT_DELAYED_WORK(&tas5720->fault_check_work, tas5720_fault_check_work);
 
@@ -450,13 +453,12 @@ static const struct regmap_config tas5720aq1_regmap_config = {
 
 /*
  * DAC analog gain. There are four discrete values to select from, ranging
- * from 19.2 dB to 26.3dB.
+ * from 19.2 dB to 25 dB.
  */
 static const DECLARE_TLV_DB_RANGE(dac_analog_tlv,
 	0x0, 0x0, TLV_DB_SCALE_ITEM(1920, 0, 0),
-	0x1, 0x1, TLV_DB_SCALE_ITEM(2070, 0, 0),
-	0x2, 0x2, TLV_DB_SCALE_ITEM(2350, 0, 0),
-	0x3, 0x3, TLV_DB_SCALE_ITEM(2630, 0, 0),
+	0x1, 0x1, TLV_DB_SCALE_ITEM(2260, 0, 0),
+	0x2, 0x2, TLV_DB_SCALE_ITEM(2500, 0, 0),
 );
 
 /*
@@ -468,7 +470,8 @@ static DECLARE_TLV_DB_SCALE(dac_tlv, -10350, 50, 0);
 
 static const struct snd_kcontrol_new tas5720_snd_controls[] = {
 	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
-		       TAS5720AQ1_VOLUME_CTRL_CFG_REG, 0, 0xff, 0, dac_tlv),
+		TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, TAS5720_Q1_VOLUME_CTRL_RIGHT_REG,
+		0, 0xff, 0, dac_tlv),
 	SOC_SINGLE_TLV("Speaker Driver Analog Gain", TAS5720AQ_ANALOG_CTRL_REG,
 		       TAS5720AQ1_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
 };
