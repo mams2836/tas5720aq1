@@ -472,7 +472,7 @@ static DECLARE_TLV_DB_SCALE(dac_tlv, -10350, 50, 0);
 static const struct snd_kcontrol_new tas5720_snd_controls[] = {
 	SOC_DOUBLE_R_TLV("Speaker Driver Playback Volume",
 		TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, 
-		TAS5720_Q1_VOLUME_CTRL_RIGHT_REG,
+		TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL,
 		0, 0xff, 0, dac_tlv),
 	SOC_SINGLE_TLV("Speaker Driver Analog Gain", TAS5720AQ_ANALOG_CTRL_REG,
 		       TAS5720AQ1_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
