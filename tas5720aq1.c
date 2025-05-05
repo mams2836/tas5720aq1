@@ -154,7 +154,7 @@ static void tas5720_register_dump(struct work_struct *work)
 	int ret;
 	unsigned int value;
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_DEVICE_ID_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_DEVICE_ID_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_DEVICE_ID_REG");
@@ -163,7 +163,7 @@ static void tas5720_register_dump(struct work_struct *work)
 	
 	dev_info(dev, "TAS5720AQ1_DEVICE_ID_REG: 0x%x", value);dev_err(dev, "TAS5720AQ1_DEVICE_ID_REG : %d", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_POWER_CTRL_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_POWER_CTRL_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_POWER_CTRL_REG");
@@ -172,7 +172,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_POWER_CTRL_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CTRL1_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_DIGITAL_CTRL1_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CTRL1_REG");
@@ -181,7 +181,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_DIGITAL_CTRL1_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_VOLUME_CTRL_CFG_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_VOLUME_CTRL_CFG_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_VOLUME_CTRL_CFG_REG");
@@ -190,7 +190,8 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_VOLUME_CTRL_CFG_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, &value);
+	
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL");
@@ -199,7 +200,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL");
@@ -208,7 +209,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_RIGHT_CHANNEL_VOLUME_CTRL: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ_ANALOG_CTRL_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ_ANALOG_CTRL_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ_ANALOG_CTRL_REG");
@@ -217,7 +218,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ_ANALOG_CTRL_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_FAULT_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_FAULT_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_FAULT_REG");
@@ -226,7 +227,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_FAULT_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP2_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP2_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CLIP2_REG");
@@ -235,7 +236,7 @@ static void tas5720_register_dump(struct work_struct *work)
 		
 	dev_info(dev, "TAS5720AQ1_DIGITAL_CLIP2_REG: 0x%x", value);
 
-	ret = regmap(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP1_REG, &value);
+	ret = regmap_read(tas5720->regmap, TAS5720AQ1_DIGITAL_CLIP1_REG, &value);
 	if (ret < 0)
 	{
 		dev_err(dev, "Failed to read TAS5720AQ1_DIGITAL_CLIP1_REG");
@@ -469,8 +470,9 @@ static const DECLARE_TLV_DB_RANGE(dac_analog_tlv,
 static DECLARE_TLV_DB_SCALE(dac_tlv, -10350, 50, 0);
 
 static const struct snd_kcontrol_new tas5720_snd_controls[] = {
-	SOC_SINGLE_TLV("Speaker Driver Playback Volume",
-		TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, TAS5720_Q1_VOLUME_CTRL_RIGHT_REG,
+	SOC_DOUBLE_R_TLV("Speaker Driver Playback Volume",
+		TAS5720AQ1_LEFT_CHANNEL_VOLUME_CTRL, 
+		TAS5720_Q1_VOLUME_CTRL_RIGHT_REG,
 		0, 0xff, 0, dac_tlv),
 	SOC_SINGLE_TLV("Speaker Driver Analog Gain", TAS5720AQ_ANALOG_CTRL_REG,
 		       TAS5720AQ1_ANALOG_GAIN_SHIFT, 3, 0, dac_analog_tlv),
