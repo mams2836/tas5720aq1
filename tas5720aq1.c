@@ -343,6 +343,14 @@ static int tas5720aq1_codec_probe(struct snd_soc_codec *codec)
 			TAS5720AQ1_DEVICE_ID, device_id);
 
 
+
+	dev_err(codec->dev, "Set Bit 7 in TAS5720_ANALOG_CTRL_REG to 1 for TAS5720A_Q1");
+
+	ret = snd_soc_update_bits(codec, TAS5720AQ1_ANALOG_CTRL_REG, TAS5720AQ1_RESERVED7_BIT,
+				  TAS5720AQ1_RESERVED7_BIT);
+	if (ret < 0)
+		goto error_snd_soc_update_bits;
+
 	//Initial mute and shutdown mode is removed for testing
 	/*Set device to mute*/
 	ret = snd_soc_update_bits(codec, TAS5720AQ1_VOLUME_CTRL_CFG_REG,
